@@ -4,37 +4,75 @@ const fs = require("fs");
 const path = require("path");
 const pdf = require("pdf-parse");
 const { spawnSync } = require("child_process");
+const { Pool } = require("pg");
+const bcrypt = require("bcrypt");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, "data", "db.json");
 const upload = multer({ dest: path.join(__dirname, "uploads") });
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
 
-function readDB() { return JSON.parse(fs.readFileSync(DB_PATH, "utf8")); }
-function writeDB(db) { fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8"); }
-function nextId(items) { return items.length ? Math.max(...items.map(x => Number(x.id) || 0)) + 1 : Date.now(); }
+function readDB() {
+  return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+}
+function writeDB(db) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
+}
+function nextId(items) {
+  return items.length ? Math.max(...items.map(x => Number(x.id) || 0)) + 1 : Date.now();
+}
 function ensureStock(db, warehouseId, productId) {
-  let stock = db.stocks.find(s => Number(s.warehouseId) === Number(warehouseId) && Number(s.productId) === Number(productId));
+  let stock = db.stocks.find(
+    s => Number(s.warehouseId) === Number(warehouseId) && Number(s.productId) === Number(productId)
+  );
   if (!stock) {
-    stock = { id: nextId(db.stocks), warehouseId: Number(warehouseId), productId: Number(productId), qty: 0, minQty: 0 };
+    stock = {
+      id: nextId(db.stocks),
+      warehouseId: Number(warehouseId),
+      productId: Number(productId),
+      qty: 0,
+      minQty: 0
+    };
     db.stocks.push(stock);
   }
   return stock;
 }
-function lowStock(db) { return db.stocks.filter(s => Number(s.qty) <= Number(s.minQty || 0)); }
-function textIncludes(v, q) { return String(v || "").toLowerCase().includes(q); }
-function productName(db, id) { return db.products.find(x => Number(x.id) === Number(id))?.name || ""; }
-function supplierName(db, id) { return db.suppliers.find(x => Number(x.id) === Number(id))?.name || ""; }
-function clientName(db, id) { return db.clients.find(x => Number(x.id) === Number(id))?.name || ""; }
-function warehouseName(db, id) { return db.warehouses.find(x => Number(x.id) === Number(id))?.name || ""; }
-function partnerName(db, type, id) { return type === "supplier" ? supplierName(db, id) : clientName(db, id); }
+function lowStock(db) {
+  return db.stocks.filter(s => Number(s.qty) <= Number(s.minQty || 0));
+}
+function textIncludes(v, q) {
+  return String(v || "").toLowerCase().includes(q);
+}
+function productName(db, id) {
+  return db.products.find(x => Number(x.id) === Number(id))?.name || "";
+}
+function supplierName(db, id) {
+  return db.suppliers.find(x => Number(x.id) === Number(id))?.name || "";
+}
+function clientName(db, id) {
+  return db.clients.find(x => Number(x.id) === Number(id))?.name || "";
+}
+function warehouseName(db, id) {
+  return db.warehouses.find(x => Number(x.id) === Number(id))?.name || "";
+}
+function partnerName(db, type, id) {
+  return type === "supplier" ? supplierName(db, id) : clientName(db, id);
+}
 
 function normalizeText(s) {
-  return String(s || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  return String(s || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 function isCimminoText(text) {
   const t = String(text || "").toLowerCase();
@@ -42,7 +80,13 @@ function isCimminoText(text) {
 }
 function shouldIgnoreDescription(desc) {
   const t = String(desc || "").toLowerCase();
-  return t.includes("trasporto") || t.includes("spedizione") || t.includes("sconto") || t.includes("concessovi") || t.includes("quota fissa");
+  return (
+    t.includes("trasporto") ||
+    t.includes("spedizione") ||
+    t.includes("sconto") ||
+    t.includes("concessovi") ||
+    t.includes("quota fissa")
+  );
 }
 function detectSupplierIdFromText(db, text) {
   const t = String(text || "").toLowerCase();
@@ -51,12 +95,15 @@ function detectSupplierIdFromText(db, text) {
 }
 function parseCimminoRows(text) {
   const rows = [];
-  const lines = String(text || "").split(/\r?\n/).map(x => normalizeText(x)).filter(Boolean);
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map(x => normalizeText(x))
+    .filter(Boolean);
 
   for (const line of lines) {
-    // Typical extractable Cimmino row:
-    // 8304848 COPRIP. RUBINO B.CO R 250X200 con patt NR 2 19,90 39,80
-    let m = line.match(/^([A-Z0-9@]{5,8})\s+(.+?)\s+\b(NR|PZ|CT|CF)\b\s+(-?\d+(?:,\d+)?)\s+(-?\d+(?:,\d+)?)\s+(-?\d+(?:,\d+)?)$/i);
+    let m = line.match(
+      /^([A-Z0-9@]{5,8})\s+(.+?)\s+\b(NR|PZ|CT|CF)\b\s+(-?\d+(?:,\d+)?)\s+(-?\d+(?:,\d+)?)\s+(-?\d+(?:,\d+)?)$/i
+    );
     if (m) {
       const code = m[1].trim();
       const desc = normalizeText(m[2]);
@@ -73,7 +120,6 @@ function parseCimminoRows(text) {
       continue;
     }
 
-    // transport lines
     if (/quota fissa di trasporto|sconto concessovi/i.test(line)) {
       rows.push({
         ean: "",
@@ -87,14 +133,17 @@ function parseCimminoRows(text) {
     }
   }
 
-  // remove pure summary lines accidentally matched
   return rows.filter(r => {
     const d = String(r.description || "").toLowerCase();
     return !(d.includes("totale imponibile") || d.includes("totale iva") || d.includes("totale documento"));
   });
 }
 function normalizeAliasText(s) {
-  return String(s || "").toLowerCase().replace(/[().,#\-_/]/g, " ").replace(/\s+/g, " ").trim();
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[().,#\-_/]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 function extractSizeToken(text) {
   const t = normalizeAliasText(text).replace(/\s/g, "");
@@ -137,13 +186,11 @@ async function parsePdfRows(filePath, direction) {
 
     const detectedSupplierId = detectSupplierIdFromText(db, text);
 
-    // 1) Try text-based Cimmino parser first
     let rows = parseCimminoRows(text);
     if (rows.length) {
       return { rows, detectedSupplierId, parser: "cimmino-text" };
     }
 
-    // 2) If no rows, try OCR specifically for Cimmino-like PDFs
     if (isCimminoText(text) || (filePath || "").toLowerCase().includes("gala")) {
       try {
         const ocr = spawnSync("python3", [path.join(__dirname, "ocr_parser.py"), filePath], {
@@ -186,43 +233,201 @@ function applyMovement(db, movement) {
 }
 function searchAll(db, q) {
   q = String(q || "").trim().toLowerCase();
-  if (!q) return {products:[], suppliers:[], clients:[], warehouses:[], stocks:[], movements:[], aliases:[], documents:[]};
+  if (!q) {
+    return {
+      products: [],
+      suppliers: [],
+      clients: [],
+      warehouses: [],
+      stocks: [],
+      movements: [],
+      aliases: [],
+      documents: []
+    };
+  }
   return {
-    products: db.products.filter(x => [x.name,x.sku,x.category,x.color,x.size,x.notes].some(v => textIncludes(v,q))),
-    suppliers: db.suppliers.filter(x => [x.name,x.vat,x.email,x.phone,x.contact,x.notes].some(v => textIncludes(v,q))),
-    clients: db.clients.filter(x => [x.name,x.vat,x.email,x.phone,x.contact,x.notes].some(v => textIncludes(v,q))),
-    warehouses: db.warehouses.filter(x => [x.name,x.city,x.address].some(v => textIncludes(v,q))),
-    stocks: db.stocks.filter(x => [productName(db,x.productId),warehouseName(db,x.warehouseId),x.qty,x.minQty].some(v => textIncludes(v,q))),
-    movements: db.movements.filter(x => [x.type,x.date,partnerName(db,x.partnerType,x.partnerId),warehouseName(db,x.warehouseId),x.orderNo,x.invoiceNo,x.ddtNo,x.notes,(x.rows||[]).map(r=>`${productName(db,r.productId)} ${r.qty} ${r.fulfillmentSource}`).join(" ")].some(v => textIncludes(v,q))),
-    aliases: db.aliases.filter(x => [x.aliasType,supplierName(db,x.supplierId),x.supplierCode,x.ean,x.supplierDescription,productName(db,x.productId)].some(v => textIncludes(v,q))),
-    documents: db.imports.filter(x => [x.documentDirection, x.documentType, x.documentNo, x.documentDate, x.originalFileName, x.status, supplierName(db,x.supplierId), clientName(db,x.clientId)].some(v => textIncludes(v,q)))
+    products: db.products.filter(x => [x.name, x.sku, x.category, x.color, x.size, x.notes].some(v => textIncludes(v, q))),
+    suppliers: db.suppliers.filter(x => [x.name, x.vat, x.email, x.phone, x.contact, x.notes].some(v => textIncludes(v, q))),
+    clients: db.clients.filter(x => [x.name, x.vat, x.email, x.phone, x.contact, x.notes].some(v => textIncludes(v, q))),
+    warehouses: db.warehouses.filter(x => [x.name, x.city, x.address].some(v => textIncludes(v, q))),
+    stocks: db.stocks.filter(x =>
+      [productName(db, x.productId), warehouseName(db, x.warehouseId), x.qty, x.minQty].some(v => textIncludes(v, q))
+    ),
+    movements: db.movements.filter(x =>
+      [
+        x.type,
+        x.date,
+        partnerName(db, x.partnerType, x.partnerId),
+        warehouseName(db, x.warehouseId),
+        x.orderNo,
+        x.invoiceNo,
+        x.ddtNo,
+        x.notes,
+        (x.rows || []).map(r => `${productName(db, r.productId)} ${r.qty} ${r.fulfillmentSource}`).join(" ")
+      ].some(v => textIncludes(v, q))
+    ),
+    aliases: db.aliases.filter(x =>
+      [x.aliasType, supplierName(db, x.supplierId), x.supplierCode, x.ean, x.supplierDescription, productName(db, x.productId)].some(
+        v => textIncludes(v, q)
+      )
+    ),
+    documents: db.imports.filter(x =>
+      [
+        x.documentDirection,
+        x.documentType,
+        x.documentNo,
+        x.documentDate,
+        x.originalFileName,
+        x.status,
+        supplierName(db, x.supplierId),
+        clientName(db, x.clientId)
+      ].some(v => textIncludes(v, q))
+    )
   };
 }
 
-app.get("/api/bootstrap", (req,res) => {
-  const db = readDB();
-  res.json({ ok:true, ...db, lowStock: lowStock(db) });
+async function getUsersFromPostgres() {
+  const result = await pool.query(`
+    select
+      u.id,
+      u.name,
+      u.email,
+      u.role_key,
+      r.name as role
+    from users u
+    left join roles r on r.key = u.role_key
+    order by u.id desc
+  `);
+
+  return result.rows.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role || "Solo lettura",
+    roleKey: u.role_key || "viewer"
+  }));
+}
+
+app.get("/api/bootstrap", async (req, res) => {
+  try {
+    const db = readDB();
+    let users = [];
+    try {
+      users = await getUsersFromPostgres();
+    } catch (e) {
+      users = db.users || [];
+    }
+
+    res.json({
+      ok: true,
+      ...db,
+      users,
+      lowStock: lowStock(db)
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: "Errore bootstrap", error: e.message });
+  }
 });
-app.get("/api/search", (req,res) => {
+
+app.get("/api/search", (req, res) => {
   const db = readDB();
   res.json(searchAll(db, req.query.q || ""));
 });
-app.post("/api/login", (req,res) => {
-  const db = readDB();
-  const { email, password } = req.body || {};
-  const user = db.users.find(u => u.email.toLowerCase() === String(email || "").toLowerCase() && u.password === password);
-  if (!user) return res.status(401).json({ ok:false, message:"Credenziali non valide" });
-  res.json({ ok:true, user: { id:user.id, name:user.name, email:user.email, role:user.role, roleKey:user.roleKey || "viewer" } });
+
+app.post("/api/login", async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+
+    const result = await pool.query(
+      `
+      select
+        u.id,
+        u.name,
+        u.email,
+        u.password_hash,
+        u.role_key,
+        r.name as role
+      from users u
+      left join roles r on r.key = u.role_key
+      where lower(u.email) = lower($1)
+      limit 1
+      `,
+      [String(email || "")]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ ok: false, message: "Credenziali non valide" });
+    }
+
+    const match = await bcrypt.compare(String(password || ""), user.password_hash);
+
+    if (!match) {
+      return res.status(401).json({ ok: false, message: "Credenziali non valide" });
+    }
+
+    res.json({
+      ok: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role || "Solo lettura",
+        roleKey: user.role_key || "viewer"
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore server", error: err.message });
+  }
 });
 
-for (const name of ["suppliers","clients","warehouses","products","aliases"]) {
-  app.get(`/api/${name}`, (req,res) => {
+app.post("/api/register", async (req, res) => {
+  try {
+    const { email, password, name, roleKey } = req.body || {};
+    const hash = await bcrypt.hash(String(password || ""), 10);
+
+    const result = await pool.query(
+      `
+      insert into users(name, email, password_hash, role_key)
+      values($1, $2, $3, $4)
+      returning id, name, email, role_key
+      `,
+      [
+        String(name || ""),
+        String(email || ""),
+        hash,
+        String(roleKey || "viewer")
+      ]
+    );
+
+    const user = result.rows[0];
+
+    res.json({
+      ok: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        roleKey: user.role_key
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore registrazione", error: err.message });
+  }
+});
+
+for (const name of ["suppliers", "clients", "warehouses", "products", "aliases"]) {
+  app.get(`/api/${name}`, (req, res) => {
     const db = readDB();
     const q = String(req.query.q || "").trim().toLowerCase();
     const list = !q ? db[name] : db[name].filter(x => Object.values(x).some(v => textIncludes(v, q)));
     res.json(list);
   });
-  app.post(`/api/${name}`, (req,res) => {
+
+  app.post(`/api/${name}`, (req, res) => {
     const db = readDB();
     const item = { id: nextId(db[name]), ...req.body };
     db[name].push(item);
@@ -231,29 +436,45 @@ for (const name of ["suppliers","clients","warehouses","products","aliases"]) {
   });
 }
 
-app.get("/api/stocks", (req,res) => {
+app.get("/api/stocks", (req, res) => {
   const db = readDB();
   const q = String(req.query.q || "").trim().toLowerCase();
-  const list = !q ? db.stocks : db.stocks.filter(x => [productName(db,x.productId),warehouseName(db,x.warehouseId),x.qty,x.minQty].some(v => textIncludes(v,q)));
+  const list = !q ? db.stocks : db.stocks.filter(x =>
+    [productName(db, x.productId), warehouseName(db, x.warehouseId), x.qty, x.minQty].some(v => textIncludes(v, q))
+  );
   res.json(list);
 });
-app.put("/api/stocks/:id", (req,res) => {
+
+app.put("/api/stocks/:id", (req, res) => {
   const db = readDB();
   const item = db.stocks.find(x => Number(x.id) === Number(req.params.id));
-  if (!item) return res.status(404).json({ ok:false, message:"Giacenza non trovata" });
+  if (!item) return res.status(404).json({ ok: false, message: "Giacenza non trovata" });
   item.qty = Number(req.body.qty ?? item.qty);
   item.minQty = Number(req.body.minQty ?? item.minQty);
   writeDB(db);
   res.json(item);
 });
 
-app.get("/api/movements", (req,res) => {
+app.get("/api/movements", (req, res) => {
   const db = readDB();
   const q = String(req.query.q || "").trim().toLowerCase();
-  const list = !q ? db.movements : db.movements.filter(x => [x.type,x.date,partnerName(db,x.partnerType,x.partnerId),warehouseName(db,x.warehouseId),x.orderNo,x.invoiceNo,x.ddtNo,x.notes,(x.rows||[]).map(r=>`${productName(db,r.productId)} ${r.qty} ${r.fulfillmentSource}`).join(" ")].some(v => textIncludes(v,q)));
+  const list = !q ? db.movements : db.movements.filter(x =>
+    [
+      x.type,
+      x.date,
+      partnerName(db, x.partnerType, x.partnerId),
+      warehouseName(db, x.warehouseId),
+      x.orderNo,
+      x.invoiceNo,
+      x.ddtNo,
+      x.notes,
+      (x.rows || []).map(r => `${productName(db, r.productId)} ${r.qty} ${r.fulfillmentSource}`).join(" ")
+    ].some(v => textIncludes(v, q))
+  );
   res.json(list);
 });
-app.post("/api/movements", (req,res) => {
+
+app.post("/api/movements", (req, res) => {
   const db = readDB();
   const movement = {
     id: nextId(db.movements),
@@ -280,35 +501,68 @@ app.post("/api/movements", (req,res) => {
   res.json(movement);
 });
 
-
-app.get("/api/users", (req,res) => {
-  const db = readDB();
-  res.json(db.users.map(u => ({ id:u.id, name:u.name, email:u.email, role:u.role, roleKey:u.roleKey })));
-});
-app.post("/api/users", (req,res) => {
-  const db = readDB();
-  const body = req.body || {};
-  const role = (db.roles || []).find(r => r.key === body.roleKey) || { key:"viewer", name:"Solo lettura" };
-  const item = {
-    id: nextId(db.users),
-    name: body.name || "",
-    email: body.email || "",
-    password: body.password || "demo123",
-    roleKey: role.key,
-    role: role.name
-  };
-  db.users.push(item);
-  writeDB(db);
-  res.json({ id:item.id, name:item.name, email:item.email, role:item.role, roleKey:item.roleKey });
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await getUsersFromPostgres();
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore utenti", error: err.message });
+  }
 });
 
-app.get("/api/imports", (req,res) => {
+app.post("/api/users", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const password = String(body.password || "demo123");
+    const hash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `
+      insert into users(name, email, password_hash, role_key)
+      values($1, $2, $3, $4)
+      returning id, name, email, role_key
+      `,
+      [
+        String(body.name || ""),
+        String(body.email || ""),
+        hash,
+        String(body.roleKey || "viewer")
+      ]
+    );
+
+    const user = result.rows[0];
+
+    const roleResult = await pool.query(
+      `select name from roles where key = $1 limit 1`,
+      [user.role_key]
+    );
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roleKey: user.role_key,
+      role: roleResult.rows[0]?.name || "Solo lettura"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore creazione utente", error: err.message });
+  }
+});
+
+app.get("/api/imports", (req, res) => {
   const db = readDB();
   const q = String(req.query.q || "").trim().toLowerCase();
-  const list = !q ? db.imports : db.imports.filter(x => [x.documentDirection,x.documentType,x.documentNo,x.documentDate,x.originalFileName,x.status,supplierName(db,x.supplierId),clientName(db,x.clientId)].some(v => textIncludes(v,q)));
+  const list = !q ? db.imports : db.imports.filter(x =>
+    [x.documentDirection, x.documentType, x.documentNo, x.documentDate, x.originalFileName, x.status, supplierName(db, x.supplierId), clientName(db, x.clientId)].some(v =>
+      textIncludes(v, q)
+    )
+  );
   res.json(list);
 });
-app.post("/api/imports/upload", upload.single("document"), async (req,res) => {
+
+app.post("/api/imports/upload", upload.single("document"), async (req, res) => {
   const db = readDB();
   const body = req.body || {};
   const direction = body.documentDirection || "supplier";
@@ -316,7 +570,7 @@ app.post("/api/imports/upload", upload.single("document"), async (req,res) => {
   let parserResult = { rows: [], detectedSupplierId: null, parser: "none" };
   if (req.file) parserResult = await parsePdfRows(req.file.path, direction);
 
-  const finalSupplierId = body.supplierId ? Number(body.supplierId) : (parserResult.detectedSupplierId || null);
+  const finalSupplierId = body.supplierId ? Number(body.supplierId) : parserResult.detectedSupplierId || null;
 
   const importDoc = {
     id: nextId(db.imports),
@@ -345,19 +599,20 @@ app.post("/api/imports/upload", upload.single("document"), async (req,res) => {
   res.json({ ...importDoc, parsedRows, detectedSupplierId: finalSupplierId, parser: parserResult.parser });
 });
 
-app.post("/api/imports/:id/rows", (req,res) => {
+app.post("/api/imports/:id/rows", (req, res) => {
   const db = readDB();
   const imp = db.imports.find(x => Number(x.id) === Number(req.params.id));
-  if (!imp) return res.status(404).json({ ok:false, message:"Import non trovato" });
+  if (!imp) return res.status(404).json({ ok: false, message: "Import non trovato" });
   imp.rows = req.body.rows || [];
   imp.status = "mapped";
   writeDB(db);
   res.json(imp);
 });
-app.post("/api/imports/:id/confirm", (req,res) => {
+
+app.post("/api/imports/:id/confirm", (req, res) => {
   const db = readDB();
   const imp = db.imports.find(x => Number(x.id) === Number(req.params.id));
-  if (!imp) return res.status(404).json({ ok:false, message:"Import non trovato" });
+  if (!imp) return res.status(404).json({ ok: false, message: "Import non trovato" });
 
   const rows = (imp.rows || [])
     .filter(r => r.action !== "ignore" && r.productId)
@@ -371,7 +626,7 @@ app.post("/api/imports/:id/confirm", (req,res) => {
   const movement = {
     id: nextId(db.movements),
     type: imp.documentDirection === "supplier" ? "carico" : "scarico",
-    date: imp.documentDate || new Date().toISOString().slice(0,10),
+    date: imp.documentDate || new Date().toISOString().slice(0, 10),
     warehouseId: Number(imp.warehouseId || 301),
     destinationWarehouseId: null,
     partnerType: imp.documentDirection === "supplier" ? "supplier" : "client",
@@ -382,18 +637,21 @@ app.post("/api/imports/:id/confirm", (req,res) => {
     notes: `Import documento ${imp.documentDirection} ${imp.documentType} ${imp.documentNo}`.trim(),
     rows
   };
+
   applyMovement(db, movement);
   db.movements.unshift(movement);
 
-  for (const row of (imp.rows || [])) {
+  for (const row of imp.rows || []) {
     if (row.productId && row.createAlias && (row.supplierCode || row.ean || row.description)) {
       const aliasType = imp.documentDirection === "supplier" ? "supplier" : "sale";
-      const already = db.aliases.find(a =>
-        String(a.aliasType || "supplier") === aliasType &&
-        String(a.supplierCode || "") === String(row.supplierCode || "") &&
-        String(a.ean || "") === String(row.ean || "") &&
-        Number(a.productId) === Number(row.productId)
+      const already = db.aliases.find(
+        a =>
+          String(a.aliasType || "supplier") === aliasType &&
+          String(a.supplierCode || "") === String(row.supplierCode || "") &&
+          String(a.ean || "") === String(row.ean || "") &&
+          Number(a.productId) === Number(row.productId)
       );
+
       if (!already) {
         db.aliases.push({
           id: nextId(db.aliases),
@@ -411,8 +669,11 @@ app.post("/api/imports/:id/confirm", (req,res) => {
   imp.confirmedMovementId = movement.id;
   imp.status = "confirmed";
   writeDB(db);
-  res.json({ ok:true, movement, importDoc: imp });
+  res.json({ ok: true, movement, importDoc: imp });
 });
 
-app.get("*", (req,res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.listen(PORT, () => console.log(`Gestionale avviato su http://localhost:${PORT}`));
+app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+
+app.listen(PORT, () => {
+  console.log(`Gestionale avviato su porta ${PORT}`);
+});
