@@ -1,0 +1,330 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Mario Rossi",
+      "email": "admin@demo.it",
+      "password": "demo123",
+      "role": "Amministratore",
+      "roleKey": "admin"
+    },
+    {
+      "id": 2,
+      "name": "Luca Bianchi",
+      "email": "magazzino@demo.it",
+      "password": "demo123",
+      "role": "Magazziniere",
+      "roleKey": "warehouse"
+    },
+    {
+      "id": 3,
+      "name": "Giulia Verdi",
+      "email": "commerciale@demo.it",
+      "password": "demo123",
+      "role": "Commerciale",
+      "roleKey": "sales"
+    }
+  ],
+  "suppliers": [
+    {
+      "id": 101,
+      "name": "Datex",
+      "vat": "IT11122233344",
+      "email": "acquisti@datex.demo",
+      "phone": "",
+      "contact": "",
+      "notes": ""
+    },
+    {
+      "id": 102,
+      "name": "Tessil House",
+      "vat": "IT55566677788",
+      "email": "ordini@tessilhouse.demo",
+      "phone": "",
+      "contact": "",
+      "notes": ""
+    },
+    {
+      "id": 103,
+      "name": "Forniture Tessili Cimmino",
+      "vat": "",
+      "email": "",
+      "phone": "",
+      "contact": "",
+      "notes": "Parser dedicato"
+    },
+    {
+      "id": 104,
+      "name": "Sydex",
+      "vat": "",
+      "email": "",
+      "phone": "",
+      "contact": "",
+      "notes": "Parser dedicato"
+    }
+  ],
+  "clients": [
+    {
+      "id": 201,
+      "name": "Hotel Aurora",
+      "vat": "IT12345678901",
+      "email": "acquisti@hotelaurora.demo",
+      "phone": "",
+      "contact": "",
+      "notes": ""
+    },
+    {
+      "id": 202,
+      "name": "Hotel Riviera",
+      "vat": "IT10987654321",
+      "email": "acquisti@hotelriviera.demo",
+      "phone": "",
+      "contact": "",
+      "notes": ""
+    }
+  ],
+  "warehouses": [
+    {
+      "id": 301,
+      "name": "Magazzino Centrale",
+      "city": "Prato",
+      "address": "",
+      "active": true
+    },
+    {
+      "id": 302,
+      "name": "Deposito Nord",
+      "city": "Bologna",
+      "address": "",
+      "active": true
+    }
+  ],
+  "products": [
+    {
+      "id": 401,
+      "name": "Lenzuolo Light 240x290 Bianco",
+      "category": "Lenzuola",
+      "sku": "LEN-LIGHT-240290-BI",
+      "color": "Bianco",
+      "size": "240x290",
+      "notes": "Articolo principale"
+    },
+    {
+      "id": 402,
+      "name": "Topper Superior Morfeo 160x195",
+      "category": "Topper",
+      "sku": "TOP-MORFEO-160195",
+      "color": "Bianco",
+      "size": "160x195",
+      "notes": ""
+    },
+    {
+      "id": 403,
+      "name": "Asciugamano viso 3 righe bianco",
+      "category": "Asciugamani",
+      "sku": "ASV-3R-BI",
+      "color": "Bianco",
+      "size": "50x100",
+      "notes": ""
+    },
+    {
+      "id": 404,
+      "name": "Kit Cortesia Barks Saponetta Box 200",
+      "category": "Cortesia",
+      "sku": "KIT-BARKS-SAP-200",
+      "color": "",
+      "size": "",
+      "notes": ""
+    },
+    {
+      "id": 405,
+      "name": "Topper Superior Morfeo 80x195",
+      "category": "Topper",
+      "sku": "TOP-MORFEO-80195",
+      "color": "Bianco",
+      "size": "80x195",
+      "notes": ""
+    },
+    {
+      "id": 406,
+      "name": "Topper Superior Morfeo 160x195",
+      "category": "Topper",
+      "sku": "TOP-MORFEO-160195",
+      "color": "Bianco",
+      "size": "160x195",
+      "notes": ""
+    }
+  ],
+  "aliases": [
+    {
+      "id": 501,
+      "supplierId": 102,
+      "supplierCode": "5500633",
+      "ean": "",
+      "supplierDescription": "JOLLY LENZ. 240x290 BIANCO ST FTC",
+      "productId": 401,
+      "aliasType": "supplier"
+    },
+    {
+      "id": 502,
+      "supplierId": 102,
+      "supplierCode": "8301163",
+      "ean": "",
+      "supplierDescription": "LENZ. JOLLY U. B.CO DA 5 R 240X290",
+      "productId": 401,
+      "aliasType": "supplier"
+    },
+    {
+      "id": 503,
+      "supplierId": 101,
+      "supplierCode": "B-GU-RELAX",
+      "ean": "8058575111463",
+      "supplierDescription": "GUANCIALE IN MEMORY CON ALOE",
+      "productId": 402,
+      "aliasType": "supplier"
+    },
+    {
+      "id": 504,
+      "supplierId": "",
+      "supplierCode": "LIGHT",
+      "ean": "",
+      "supplierDescription": "Light 240x290",
+      "productId": 401,
+      "aliasType": "sale"
+    },
+    {
+      "id": 505,
+      "supplierId": "",
+      "supplierCode": "TOPMORM",
+      "ean": "",
+      "supplierDescription": "Topper superior Morfeo",
+      "productId": 402,
+      "aliasType": "sale"
+    },
+    {
+      "id": 506,
+      "supplierId": "",
+      "supplierCode": "BarksKitSaponetta",
+      "ean": "",
+      "supplierDescription": "Kit Barks saponetta",
+      "productId": 404,
+      "aliasType": "sale"
+    },
+    {
+      "id": 507,
+      "supplierId": "",
+      "supplierCode": "TOPMOR1P",
+      "ean": "",
+      "supplierDescription": "Topper superior Morfeo 80x195",
+      "productId": 405,
+      "aliasType": "sale"
+    },
+    {
+      "id": 508,
+      "supplierId": "",
+      "supplierCode": "TOPMORM",
+      "ean": "",
+      "supplierDescription": "Topper superior Morfeo 160x195",
+      "productId": 406,
+      "aliasType": "sale"
+    }
+  ],
+  "stocks": [
+    {
+      "id": 601,
+      "warehouseId": 301,
+      "productId": 401,
+      "qty": 22,
+      "minQty": 10
+    },
+    {
+      "id": 602,
+      "warehouseId": 301,
+      "productId": 402,
+      "qty": 2,
+      "minQty": 4
+    },
+    {
+      "id": 603,
+      "warehouseId": 301,
+      "productId": 403,
+      "qty": 18,
+      "minQty": 20
+    },
+    {
+      "id": 604,
+      "warehouseId": 302,
+      "productId": 403,
+      "qty": 12,
+      "minQty": 10
+    },
+    {
+      "id": 605,
+      "warehouseId": 301,
+      "productId": 404,
+      "qty": 250,
+      "minQty": 100
+    },
+    {
+      "id": 606,
+      "warehouseId": 301,
+      "productId": 405,
+      "qty": 3,
+      "minQty": 1
+    },
+    {
+      "id": 607,
+      "warehouseId": 301,
+      "productId": 406,
+      "qty": 2,
+      "minQty": 1
+    }
+  ],
+  "movements": [],
+  "imports": [],
+  "roles": [
+    {
+      "key": "admin",
+      "name": "Amministratore",
+      "permissions": [
+        "all"
+      ]
+    },
+    {
+      "key": "warehouse",
+      "name": "Magazziniere",
+      "permissions": [
+        "dashboard",
+        "products",
+        "stocks",
+        "movements",
+        "import",
+        "documents",
+        "search"
+      ]
+    },
+    {
+      "key": "sales",
+      "name": "Commerciale",
+      "permissions": [
+        "dashboard",
+        "clients",
+        "products",
+        "movements",
+        "documents",
+        "search"
+      ]
+    },
+    {
+      "key": "viewer",
+      "name": "Solo lettura",
+      "permissions": [
+        "dashboard",
+        "products",
+        "stocks",
+        "documents",
+        "search"
+      ]
+    }
+  ]
+}

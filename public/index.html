@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestionale Magazzino MVP</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div id="login-view" class="login-wrap">
+    <div class="login-box">
+      <div class="login-left">
+        <img src="/assets/logo-tessilshop.png" alt="Tessil Shop" style="max-width:220px;background:white;padding:10px;border-radius:14px" />
+        <h1 style="font-size:36px;line-height:1.1;margin:18px 0 10px">Gestionale Tessil Shop</h1>
+        <p style="color:#d8e6e8">Software interno Gala SRLS per forniture tessili alberghiere, con documenti, carico/scarico e gestione magazzino.</p>
+        <div style="margin-top:14px;color:#d8e6e8;font-size:14px;line-height:1.5">
+          Gala SRLS · Corso M. Crawford 69 · Sant'Agnello (NA)<br>
+          +39 380 342 4048 · info@tessilshop.com · P. IVA 09645891210
+        </div>
+        <div style="margin-top:28px" class="small">
+          Utenti demo:<br>
+          admin@demo.it / demo123<br>
+          magazzino@demo.it / demo123<br>
+          commerciale@demo.it / demo123
+        </div>
+      </div>
+      <div class="login-right">
+        <div class="title" style="font-size:30px">Accedi</div>
+        <div class="subtitle">Versione locale per localhost.</div>
+        <form id="login-form" style="margin-top:22px;display:grid;gap:12px">
+          <input id="login-email" value="admin@demo.it" placeholder="Email" />
+          <input id="login-password" value="demo123" type="password" placeholder="Password" />
+          <button class="btn" type="submit">Entra</button>
+          <div id="login-error" class="hidden badge badge-red"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-view" class="layout hidden">
+    <aside class="sidebar">
+      <div class="company-box">
+        <img src="/assets/logo-tessilshop.png" alt="Tessil Shop" class="company-logo" />
+        <div class="company-meta">
+          <strong>Gala SRLS</strong><br>
+          Corso M. Crawford 69<br>
+          Sant'Agnello (NA)<br>
+          Tel. +39 380 342 4048<br>
+          Email: info@tessilshop.com<br>
+          P. IVA 09645891210
+        </div>
+      </div>
+      <div class="nav">
+        <button data-view="dashboard" class="active">Dashboard</button>
+        <button data-view="suppliers">Fornitori</button>
+        <button data-view="clients">Clienti</button>
+        <button data-view="warehouses">Magazzini</button>
+        <button data-view="products">Articoli principali</button>
+        <button data-view="aliases">Alias</button>
+        <button data-view="stocks">Giacenze</button>
+        <button data-view="movements">Movimenti</button>
+        <button data-view="import">Importa documento</button>
+        <button data-view="documents">Documenti salvati</button>
+        <button data-view="users">Utenti e permessi</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div>
+          <div class="title">Gestionale Tessil Shop</div>
+          <div class="subtitle">Gestionale proprietario Gala SRLS · Versione focalizzata sul carico Cimmino con OCR</div>
+        </div>
+        <div class="actions">
+          <div class="searchbar">
+            <input id="global-search-input" placeholder="Ricerca globale..." />
+          </div>
+          <div class="small">Gala SRLS · Tessil Shop</div><div class="small" id="current-user"></div>
+          <button id="logout-btn" class="btn secondary" type="button">Esci</button>
+        </div>
+      </div>
+
+      <div id="global-search-results" class="card" style="margin-top:14px"></div>
+
+      <section id="view-dashboard" class="view">
+        <div class="cards">
+          <div class="card"><div class="kpi-title">Prodotti principali</div><div id="kpi-products" class="kpi-value">0</div></div>
+          <div class="card"><div class="kpi-title">Fornitori</div><div id="kpi-suppliers" class="kpi-value">0</div></div>
+          <div class="card"><div class="kpi-title">Magazzini</div><div id="kpi-warehouses" class="kpi-value">0</div></div>
+          <div class="card"><div class="kpi-title">Sotto scorta</div><div id="kpi-lowstock" class="kpi-value">0</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Giacenze rapide</div>
+            <table><thead><tr><th>Prodotto</th><th>SKU</th><th>Categoria</th><th>Totale</th></tr></thead><tbody id="dashboard-stock-body"></tbody></table>
+          </div>
+          <div class="card">
+            <div class="section-title">Alert scorte basse</div>
+            <div id="dashboard-lowstock"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-suppliers" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo fornitore</div>
+            <form id="form-supplier" class="form-grid">
+              <input name="name" placeholder="Ragione sociale" required />
+              <input name="vat" placeholder="Partita IVA" />
+              <input name="email" placeholder="Email" />
+              <input name="phone" placeholder="Telefono" />
+              <input name="contact" placeholder="Referente" />
+              <input name="notes" placeholder="Note" />
+              <button class="btn" type="submit">Salva fornitore</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Elenco fornitori</div><input id="suppliers-search" placeholder="Cerca fornitore..." /></div>
+            <table><thead><tr><th>Nome</th><th>P.IVA</th><th>Email</th><th>Telefono</th><th>Note</th></tr></thead><tbody id="suppliers-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-clients" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo cliente</div>
+            <form id="form-client" class="form-grid">
+              <input name="name" placeholder="Ragione sociale" required />
+              <input name="vat" placeholder="Partita IVA" />
+              <input name="email" placeholder="Email" />
+              <input name="phone" placeholder="Telefono" />
+              <input name="contact" placeholder="Referente" />
+              <input name="notes" placeholder="Note" />
+              <button class="btn" type="submit">Salva cliente</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Elenco clienti</div><input id="clients-search" placeholder="Cerca cliente..." /></div>
+            <table><thead><tr><th>Nome</th><th>P.IVA</th><th>Email</th><th>Telefono</th><th>Note</th></tr></thead><tbody id="clients-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-warehouses" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo magazzino</div>
+            <form id="form-warehouse" class="form-grid">
+              <input name="name" placeholder="Nome magazzino" required />
+              <input name="city" placeholder="Città" />
+              <input name="address" placeholder="Indirizzo" />
+              <select name="active"><option value="true">Attivo</option><option value="false">Disattivo</option></select>
+              <button class="btn" type="submit">Salva magazzino</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Elenco magazzini</div><input id="warehouses-search" placeholder="Cerca magazzino..." /></div>
+            <table><thead><tr><th>Nome</th><th>Città</th><th>Indirizzo</th><th>Stato</th></tr></thead><tbody id="warehouses-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-products" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo articolo principale</div>
+            <form id="form-product" class="form-grid">
+              <input name="name" placeholder="Nome articolo principale" required />
+              <input name="sku" placeholder="SKU interno" />
+              <input name="category" placeholder="Categoria" />
+              <input name="color" placeholder="Colore" />
+              <input name="size" placeholder="Misura" />
+              <input name="notes" placeholder="Note" />
+              <button class="btn" type="submit">Salva articolo</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Elenco articoli</div><input id="products-search" placeholder="Cerca prodotto..." /></div>
+            <table><thead><tr><th>Nome</th><th>SKU</th><th>Categoria</th><th>Colore</th><th>Misura</th></tr></thead><tbody id="products-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-aliases" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo alias</div>
+            <form id="form-alias" class="form-grid">
+              <select name="aliasType">
+                <option value="supplier">Alias fornitore</option>
+                <option value="sale">Alias vendita</option>
+              </select>
+              <select id="alias-supplierId" name="supplierId"></select>
+              <input name="supplierCode" placeholder="Codice / alias" />
+              <input name="ean" placeholder="EAN" />
+              <input name="supplierDescription" placeholder="Descrizione esterna" />
+              <select id="alias-productId" name="productId"></select>
+              <button class="btn" type="submit">Salva alias</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Elenco alias</div><input id="aliases-search" placeholder="Cerca alias..." /></div>
+            <table><thead><tr><th>Tipo</th><th>Fornitore</th><th>Codice</th><th>Descrizione</th><th>Articolo principale</th></tr></thead><tbody id="aliases-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-stocks" class="view hidden">
+        <div class="card">
+          <div class="toolbar"><div class="section-title" style="margin:0">Giacenze</div><input id="stocks-search" placeholder="Cerca giacenza..." /></div>
+          <table><thead><tr><th>Magazzino</th><th>Prodotto</th><th>Quantità</th><th>Scorta minima</th><th>Azione</th></tr></thead><tbody id="stocks-body"></tbody></table>
+        </div>
+      </section>
+
+      <section id="view-movements" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo movimento</div>
+            <form id="form-movement">
+              <div class="form-grid">
+                <select id="movement-type"><option value="carico">Carico</option><option value="scarico">Scarico</option><option value="trasferimento">Trasferimento</option></select>
+                <input id="movement-date" type="date" />
+                <select id="movement-warehouseId"></select>
+                <select id="movement-destinationWarehouseId"></select>
+                <select id="movement-partnerId"></select>
+                <input id="movement-orderNo" placeholder="Numero ordine" />
+                <input id="movement-invoiceNo" placeholder="Numero fattura" />
+                <input id="movement-ddtNo" placeholder="Numero DDT" />
+              </div>
+              <hr />
+              <div class="toolbar"><div class="section-title" style="margin:0">Righe movimento</div><button id="add-movement-row" class="btn secondary" type="button">Aggiungi riga</button></div>
+              <div id="movement-rows"></div>
+              <textarea id="movement-notes" placeholder="Note"></textarea>
+              <div style="margin-top:12px"><button class="btn" type="submit">Salva movimento</button></div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Storico movimenti</div><input id="movements-search" placeholder="Cerca movimento..." /></div>
+            <table><thead><tr><th>Tipo</th><th>Data</th><th>Magazzino</th><th>Cliente/Fornitore</th><th>Riferimenti</th><th>Righe</th></tr></thead><tbody id="movements-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-import" class="view hidden">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-title">Importa documento</div>
+            <form id="import-upload-form">
+              <div class="form-grid">
+                <select id="import-direction">
+                  <option value="supplier">Documento fornitore (carico)</option>
+                  <option value="client">Documento cliente (scarico)</option>
+                </select>
+                <div id="import-supplier-wrap"><select id="import-supplierId"></select></div>
+                <div id="import-client-wrap" class="hidden"><select id="import-clientId"></select></div>
+                <select id="import-documentType"><option value="fattura">Fattura</option><option value="ddt">DDT</option><option value="altro">Altro</option></select>
+                <input id="import-documentNo" placeholder="Numero documento" />
+                <input id="import-documentDate" type="date" />
+                <select id="import-warehouseId"></select>
+              </div>
+              <div class="upload-box" style="margin-top:12px"><input id="import-file" type="file" /><div class="small" style="margin-top:8px">Per i documenti cliente, di default tutte le righe scaricano da magazzino. Togli la spunta per quelle spedite dal fornitore. Le associazioni già confermate vengono riutilizzate automaticamente nei documenti successivi.</div></div>
+              <div class="actions" style="margin-top:12px"><button class="btn" type="submit">Carica documento</button><button id="import-add-row" class="btn secondary" type="button">Aggiungi riga manuale</button></div>
+            </form>
+            <div id="import-status" class="small" style="margin-top:10px"></div>
+          </div>
+          <div class="card">
+            <div class="toolbar"><div class="section-title" style="margin:0">Conferma righe importate</div><input id="import-rows-search" placeholder="Cerca righe importate..." /></div>
+            <table><thead><tr><th>#</th><th>EAN</th><th>Codice</th><th>Descrizione</th><th>Qtà</th><th>Stato</th><th>Articolo</th><th>Scarica da magazzino</th><th>Disponibilità</th><th>Azione</th></tr></thead><tbody id="import-rows-body"></tbody></table>
+            <div style="margin-top:12px"><button id="import-confirm" class="btn" type="button">Conferma</button></div>
+            <div id="import-confirm-label" class="small" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-documents" class="view hidden">
+        <div class="card">
+          <div class="toolbar"><div class="section-title" style="margin:0">Documenti salvati</div><input id="documents-search" placeholder="Cerca documento..." /></div>
+          <table><thead><tr><th>Direzione</th><th>Partner</th><th>Tipo</th><th>Numero</th><th>Data</th><th>File</th><th>Stato</th><th>Apri</th></tr></thead><tbody id="documents-body"></tbody></table>
+        </div>
+      </section>
+    
+      <section id="view-users" class="view hidden">
+        <div id="user-management-panel" class="grid-2">
+          <div class="card">
+            <div class="section-title">Nuovo utente</div>
+            <form id="form-user" class="form-grid">
+              <input id="user-name" placeholder="Nome e cognome" required />
+              <input id="user-email" placeholder="Email" required />
+              <input id="user-password" placeholder="Password iniziale" value="demo123" required />
+              <select id="user-roleKey"></select>
+              <button class="btn" type="submit">Crea utente</button>
+            </form>
+            <div class="small" style="margin-top:10px">
+              Ruoli disponibili:<br>
+              <strong>Amministratore</strong>: vede e fa tutto<br>
+              <strong>Magazziniere</strong>: carichi, scarichi, giacenze, documenti<br>
+              <strong>Commerciale</strong>: clienti, prodotti, movimenti, documenti<br>
+              <strong>Solo lettura</strong>: solo consultazione
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">Elenco utenti</div>
+            <table><thead><tr><th>Nome</th><th>Email</th><th>Ruolo</th><th>Chiave ruolo</th></tr></thead><tbody id="users-body"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>

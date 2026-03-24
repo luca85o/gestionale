@@ -1,0 +1,6 @@
+@echo off
+echo Installazione dipendenze...
+npm install
+echo Avvio gestionale...
+npm run dev
+pause
