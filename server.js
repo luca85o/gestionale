@@ -14,7 +14,9 @@ const upload = multer({ dest: path.join(__dirname, "uploads") });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 app.use(express.json({ limit: "10mb" }));
