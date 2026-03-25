@@ -39,11 +39,11 @@ function fillProductForm(product) {
   form.querySelector('[name="color"]').value = product.color || "";
   form.querySelector('[name="size"]').value = product.size || "";
   form.querySelector('[name="notes"]').value = product.notes || "";
-  form.querySelector('[name="purchasePriceNet"]').value = product.purchasePriceNet ?? "";
-  form.querySelector('[name="purchasePriceGross"]').value = product.purchasePriceGross ?? "";
-  form.querySelector('[name="salePriceNet"]').value = product.salePriceNet ?? "";
-  form.querySelector('[name="salePriceGross"]').value = product.salePriceGross ?? "";
-  form.querySelector('[name="vatRate"]').value = product.vatRate ?? "";
+ form.querySelector('[name="purchasePriceNet"]').value = product.purchasePriceNet ?? "";
+form.querySelector('[name="purchasePriceGross"]').value = product.purchasePriceGross ?? "";
+form.querySelector('[name="salePriceNet"]').value = product.salePriceNet ?? "";
+form.querySelector('[name="salePriceGross"]').value = product.salePriceGross ?? "";
+form.querySelector('[name="vatRate"]').value = product.vatRate ?? "";
   $("#product-form-title").textContent = "Modifica articolo principale";
   $("#product-save-btn").textContent = "Salva modifica";
   $("#product-cancel-edit").classList.remove("hidden");
