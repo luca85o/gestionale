@@ -166,22 +166,24 @@
   <div class="grid-2">
     <div class="card">
       <div class="section-title" id="product-form-title">Nuovo articolo principale</div>
-      <form id="form-product" class="form-grid">
-        <input type="hidden" name="id" />
-        <input name="name" placeholder="Nome articolo principale" required />
-        <input name="sku" placeholder="SKU interno" />
-        <input name="category" placeholder="Categoria" />
-        <input name="color" placeholder="Colore" />
-        <input name="size" placeholder="Misura" />
-        <input name="notes" placeholder="Note" />
-        <input name="purchasePriceNet" placeholder="Prezzo acquisto senza IVA" type="number" step="0.01" />
-        <input name="purchasePriceGross" placeholder="Prezzo acquisto con IVA" type="number" step="0.01" />
-        <input name="salePriceNet" placeholder="Prezzo vendita senza IVA" type="number" step="0.01" />
-        <input name="salePriceGross" placeholder="Prezzo vendita con IVA" type="number" step="0.01" />
-        <input name="vatRate" placeholder="IVA %" type="number" step="0.01" />
-        <button class="btn" id="product-save-btn" type="submit">Salva articolo</button>
-        <button class="btn secondary hidden" id="product-cancel-edit" type="button">Annulla modifica</button>
-      </form>
+<form id="form-product" class="form-grid">
+  <input type="hidden" name="id" />
+  <input name="name" placeholder="Nome articolo principale" required />
+  <input name="sku" placeholder="SKU interno" />
+  <input name="category" placeholder="Categoria" />
+  <input name="color" placeholder="Colore" />
+  <input name="size" placeholder="Misura" />
+
+  <input name="purchasePriceNet" placeholder="Prezzo acquisto senza IVA" type="number" step="0.01" />
+  <input name="purchasePriceGross" placeholder="Prezzo acquisto con IVA" type="number" step="0.01" />
+  <input name="salePriceNet" placeholder="Prezzo vendita senza IVA" type="number" step="0.01" />
+  <input name="salePriceGross" placeholder="Prezzo vendita con IVA" type="number" step="0.01" />
+  <input name="vatRate" placeholder="IVA %" type="number" step="0.01" />
+
+  <input name="notes" placeholder="Note" />
+  <button class="btn" id="product-save-btn" type="submit">Salva articolo</button>
+  <button class="btn secondary hidden" id="product-cancel-edit" type="button">Annulla modifica</button>
+</form>
     </div>
     <div class="card">
       <div class="toolbar">
