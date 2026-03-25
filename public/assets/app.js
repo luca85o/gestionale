@@ -173,7 +173,34 @@ function bindCrudForm(formSelector, endpoint, fields, after){
 function renderSuppliers(){ const q=$("#suppliers-search").value||""; const b=$("#suppliers-body"); b.innerHTML=""; filterList(state.db.suppliers,q,["name","vat","email","phone","contact","notes"]).forEach(s=>b.appendChild(el("tr",{},[el("td",{},s.name),el("td",{},s.vat||""),el("td",{},s.email||""),el("td",{},s.phone||""),el("td",{},s.notes||"")]))); }
 function renderClients(){ const q=$("#clients-search").value||""; const b=$("#clients-body"); b.innerHTML=""; filterList(state.db.clients,q,["name","vat","email","phone","contact","notes"]).forEach(s=>b.appendChild(el("tr",{},[el("td",{},s.name),el("td",{},s.vat||""),el("td",{},s.email||""),el("td",{},s.phone||""),el("td",{},s.notes||"")]))); }
 function renderWarehouses(){ const q=$("#warehouses-search").value||""; const b=$("#warehouses-body"); b.innerHTML=""; filterList(state.db.warehouses,q,["name","city","address","active"]).forEach(w=>b.appendChild(el("tr",{},[el("td",{},w.name),el("td",{},w.city||""),el("td",{},w.address||""),el("td",{},String(w.active))]))); }
-function renderProducts(){ const q=$("#products-search").value||""; const b=$("#products-body"); b.innerHTML=""; filterList(state.db.products,q,["name","sku","category","color","size","notes"]).forEach(p=>b.appendChild(el("tr",{},[el("td",{},p.name),el("td",{},p.sku||""),el("td",{},p.category||""),el("td",{},p.color||""),el("td",{},p.size||"")]))); }
+function renderProducts() {
+  const q = $("#products-search").value || "";
+  const b = $("#products-body");
+  b.innerHTML = "";
+
+  filterList(state.db.products, q, ["name","sku","category","color","size","notes"]).forEach(p => {
+    const tr = el("tr", {}, [
+      el("td", {}, p.name),
+      el("td", {}, p.sku || ""),
+      el("td", {}, p.category || ""),
+      el("td", {}, p.color || ""),
+      el("td", {}, p.size || "")
+    ]);
+
+    const tdActions = el("td");
+    const editBtn = el("button", { class: "btn secondary", type: "button", style: "margin-right:8px" }, "Modifica");
+    editBtn.onclick = () => fillProductForm(p);
+
+    const deleteBtn = el("button", { class: "btn secondary", type: "button" }, "Elimina");
+    deleteBtn.onclick = () => deleteProduct(p);
+
+    tdActions.appendChild(editBtn);
+    tdActions.appendChild(deleteBtn);
+    tr.appendChild(tdActions);
+
+    b.appendChild(tr);
+  });
+}
 function renderAliases(){
   const q=$("#aliases-search").value||""; $("#alias-supplierId").innerHTML=`<option value="">Seleziona fornitore</option>`+state.db.suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join(""); $("#alias-productId").innerHTML=`<option value="">Seleziona articolo principale</option>`+state.db.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
   const b=$("#aliases-body"); b.innerHTML="";
@@ -353,8 +380,55 @@ async function init(){
   bindCrudForm("#form-supplier","suppliers",["name","vat","email","phone","contact","notes"], async()=>{ await loadBootstrap(); renderSuppliers(); renderDashboard(); renderImport(); renderAliases(); });
   bindCrudForm("#form-client","clients",["name","vat","email","phone","contact","notes"], async()=>{ await loadBootstrap(); renderClients(); renderImport(); });
   bindCrudForm("#form-warehouse","warehouses",["name","city","address","active"], async()=>{ await loadBootstrap(); renderWarehouses(); renderImport(); });
-  bindCrudForm("#form-product","products",["name","sku","category","color","size","notes"], async()=>{ await loadBootstrap(); renderProducts(); renderAliases(); renderStocks(); renderDashboard(); });
-  bindCrudForm("#form-alias","aliases",["aliasType","supplierId","supplierCode","ean","supplierDescription","productId"], async()=>{ await loadBootstrap(); renderAliases(); });
+const productForm = $("#form-product");
+productForm.onsubmit = async e => {
+  e.preventDefault();
+
+  const payload = {
+    name: productForm.querySelector('[name="name"]').value,
+    sku: productForm.querySelector('[name="sku"]').value,
+    category: productForm.querySelector('[name="category"]').value,
+    color: productForm.querySelector('[name="color"]').value,
+    size: productForm.querySelector('[name="size"]').value,
+    notes: productForm.querySelector('[name="notes"]').value
+  };
+
+  const productId = productForm.querySelector('[name="id"]').value;
+
+  try {
+    if (productId) {
+      const confirmed = confirm(`Confermi la modifica del prodotto "${payload.name}"?`);
+      if (!confirmed) return;
+
+      await api(`/api/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      alert(`Operazione completata: prodotto "${payload.name}" modificato con successo.`);
+    } else {
+      await api(`/api/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      alert(`Operazione completata: prodotto "${payload.name}" creato con successo.`);
+    }
+
+    await loadBootstrap();
+    renderProducts();
+    renderAliases();
+    renderStocks();
+    renderDashboard();
+    resetProductForm();
+  } catch (err) {
+    alert(err.message || "Errore salvataggio prodotto");
+  }
+};
+
+$("#product-cancel-edit").onclick = () => resetProductForm();  bindCrudForm("#form-alias","aliases",["aliasType","supplierId","supplierCode","ean","supplierDescription","productId"], async()=>{ await loadBootstrap(); renderAliases(); });
   const userForm = $("#form-user");
   if (userForm) {
     userForm.onsubmit = async e => {
