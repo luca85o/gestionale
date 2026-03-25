@@ -21,6 +21,11 @@ function clientName(id){ return state.db.clients.find(x=>Number(x.id)===Number(i
 function warehouseName(id){ return state.db.warehouses.find(x=>Number(x.id)===Number(id))?.name || "-"; }
 function partnerName(type,id){ return type==="supplier"?supplierName(id):clientName(id); }
 
+function formatMoney(value){
+  if (value == null || value === "" || Number.isNaN(Number(value))) return "-";
+  return Number(value).toFixed(2);
+}
+
 function resetProductForm() {
   const form = $("#form-product");
   form.reset();
