@@ -21,6 +21,57 @@ function clientName(id){ return state.db.clients.find(x=>Number(x.id)===Number(i
 function warehouseName(id){ return state.db.warehouses.find(x=>Number(x.id)===Number(id))?.name || "-"; }
 function partnerName(type,id){ return type==="supplier"?supplierName(id):clientName(id); }
 
+function resetProductForm() {
+  const form = $("#form-product");
+  form.reset();
+  form.querySelector('[name="id"]').value = "";
+  $("#product-form-title").textContent = "Nuovo articolo principale";
+  $("#product-save-btn").textContent = "Salva articolo";
+  $("#product-cancel-edit").classList.add("hidden");
+}
+
+function fillProductForm(product) {
+  const form = $("#form-product");
+  form.querySelector('[name="id"]').value = product.id;
+  form.querySelector('[name="name"]').value = product.name || "";
+  form.querySelector('[name="sku"]').value = product.sku || "";
+  form.querySelector('[name="category"]').value = product.category || "";
+  form.querySelector('[name="color"]').value = product.color || "";
+  form.querySelector('[name="size"]').value = product.size || "";
+  form.querySelector('[name="notes"]').value = product.notes || "";
+  $("#product-form-title").textContent = "Modifica articolo principale";
+  $("#product-save-btn").textContent = "Salva modifica";
+  $("#product-cancel-edit").classList.remove("hidden");
+}
+
+async function deleteProduct(product) {
+  const stockRows = state.db.stocks.filter(s => Number(s.productId) === Number(product.id));
+  const totalQty = stockRows.reduce((sum, s) => sum + Number(s.qty || 0), 0);
+
+  let message = `Confermi l'eliminazione del prodotto "${product.name}"?`;
+  if (totalQty > 0) {
+    message =
+      `ATTENZIONE: il prodotto "${product.name}" ha giacenze maggiori di zero (${totalQty}).\n\n` +
+      `Confermi comunque l'eliminazione?`;
+  }
+
+  const confirmed = confirm(message);
+  if (!confirmed) return;
+
+  try {
+    await api(`/api/products/${product.id}?force=1`, { method: "DELETE" });
+    alert(`Operazione completata: prodotto "${product.name}" eliminato con successo.`);
+    await loadBootstrap();
+    renderProducts();
+    renderStocks();
+    renderDashboard();
+    renderAliases();
+    resetProductForm();
+  } catch (err) {
+    alert(err.message || "Errore eliminazione prodotto");
+  }
+}
+
 function rolePermissions() {
   const roles = state.db.roles || [];
   const key = state.currentUser?.roleKey || "viewer";
