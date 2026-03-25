@@ -892,6 +892,110 @@ app.post("/api/products", async (req, res) => {
   }
 });
 
+app.put("/api/products/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const b = req.body || {};
+
+    const result = await pool.query(`
+      update products
+      set
+        name = $1,
+        sku = $2,
+        category = $3,
+        color = $4,
+        size = $5,
+        notes = $6
+      where id = $7
+      returning
+        id,
+        name,
+        sku,
+        category,
+        color,
+        size,
+        notes,
+        ean,
+        purchase_price_net as "purchasePriceNet",
+        purchase_price_gross as "purchasePriceGross",
+        sale_price_net as "salePriceNet",
+        sale_price_gross as "salePriceGross",
+        vat_rate as "vatRate",
+        supplier_pack_qty as "supplierPackQty"
+    `, [
+      String(b.name || ""),
+      String(b.sku || ""),
+      String(b.category || ""),
+      String(b.color || ""),
+      String(b.size || ""),
+      String(b.notes || ""),
+      id
+    ]);
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ ok: false, message: "Prodotto non trovato" });
+    }
+
+    res.json({ ok: true, product: result.rows[0], message: "Prodotto modificato con successo" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore aggiornamento prodotto", error: err.message });
+  }
+});
+
+app.delete("/api/products/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const force = String(req.query.force || "") === "1";
+
+    const qtyResult = await pool.query(`
+      select coalesce(sum(qty), 0) as total_qty
+      from stocks
+      where product_id = $1
+    `, [id]);
+
+    const totalQty = Number(qtyResult.rows[0]?.total_qty || 0);
+
+    if (totalQty > 0 && !force) {
+      return res.status(409).json({
+        ok: false,
+        needsConfirm: true,
+        totalQty,
+        message: `Il prodotto ha giacenze maggiori di zero (${totalQty}). Confermi l'eliminazione?`
+      });
+    }
+
+    await pool.query(`delete from movement_rows where product_id = $1`, [id]);
+    await pool.query(`delete from stocks where product_id = $1`, [id]);
+
+    const deleted = await pool.query(`
+      delete from products
+      where id = $1
+      returning id, name
+    `, [id]);
+
+    if (!deleted.rows[0]) {
+      return res.status(404).json({ ok: false, message: "Prodotto non trovato" });
+    }
+
+    // pulizia alias nel vecchio db.json
+    try {
+      const legacy = readDB();
+      legacy.aliases = (legacy.aliases || []).filter(a => Number(a.productId) !== id);
+      writeDB(legacy);
+    } catch (_) {}
+
+    res.json({
+      ok: true,
+      message: "Prodotto eliminato con successo",
+      deleted: deleted.rows[0]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Errore eliminazione prodotto", error: err.message });
+  }
+});
+
 app.get("/api/aliases", (req, res) => {
   const db = readDB();
   const q = String(req.query.q || "").trim().toLowerCase();
