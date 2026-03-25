@@ -162,26 +162,43 @@
         </div>
       </section>
 
-      <section id="view-products" class="view hidden">
-        <div class="grid-2">
-          <div class="card">
-            <div class="section-title">Nuovo articolo principale</div>
-            <form id="form-product" class="form-grid">
-              <input name="name" placeholder="Nome articolo principale" required />
-              <input name="sku" placeholder="SKU interno" />
-              <input name="category" placeholder="Categoria" />
-              <input name="color" placeholder="Colore" />
-              <input name="size" placeholder="Misura" />
-              <input name="notes" placeholder="Note" />
-              <button class="btn" type="submit">Salva articolo</button>
-            </form>
-          </div>
-          <div class="card">
-            <div class="toolbar"><div class="section-title" style="margin:0">Elenco articoli</div><input id="products-search" placeholder="Cerca prodotto..." /></div>
-            <table><thead><tr><th>Nome</th><th>SKU</th><th>Categoria</th><th>Colore</th><th>Misura</th></tr></thead><tbody id="products-body"></tbody></table>
-          </div>
-        </div>
-      </section>
+<section id="view-products" class="view hidden">
+  <div class="grid-2">
+    <div class="card">
+      <div class="section-title" id="product-form-title">Nuovo articolo principale</div>
+      <form id="form-product" class="form-grid">
+        <input type="hidden" name="id" />
+        <input name="name" placeholder="Nome articolo principale" required />
+        <input name="sku" placeholder="SKU interno" />
+        <input name="category" placeholder="Categoria" />
+        <input name="color" placeholder="Colore" />
+        <input name="size" placeholder="Misura" />
+        <input name="notes" placeholder="Note" />
+        <button class="btn" id="product-save-btn" type="submit">Salva articolo</button>
+        <button class="btn secondary hidden" id="product-cancel-edit" type="button">Annulla modifica</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="section-title" style="margin:0">Elenco articoli</div>
+        <input id="products-search" placeholder="Cerca prodotto..." />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Colore</th>
+            <th>Misura</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="products-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
       <section id="view-aliases" class="view hidden">
         <div class="grid-2">
