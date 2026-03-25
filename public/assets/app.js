@@ -166,10 +166,46 @@ function renderDashboard(){
   else state.db.lowStock.forEach(s=>low.appendChild(el("div",{"class":"status-box"},`${productName(s.productId)} · ${warehouseName(s.warehouseId)} · disponibile ${s.qty} / minimo ${s.minQty}`)));
 }
 function renderGlobalSearchResults(results){
-  const wrap=$("#global-search-results"); wrap.innerHTML=""; if(!results) return;
-  const entries=[["Prodotti",results.products,x=>`${x.name} · ${x.sku||""}`],["Fornitori",results.suppliers,x=>`${x.name} · ${x.vat||""}`],["Clienti",results.clients,x=>`${x.name} · ${x.vat||""}`],["Magazzini",results.warehouses,x=>`${x.name} · ${x.city||""}`],["Giacenze",results.stocks,x=>`${productName(x.productId)} · ${warehouseName(x.warehouseId)} · qty ${x.qty}`],["Movimenti",results.movements,x=>`${x.type} · ${x.date} · ${x.invoiceNo||x.ddtNo||x.orderNo||""}`],["Alias",results.aliases,x=>`${x.aliasType} · ${x.supplierCode||""} · ${x.supplierDescription||""}`],["Documenti",results.documents,x=>`${x.documentDirection} · ${x.documentNo||""} · ${x.originalFileName||""}`]];
-  let has=false; entries.forEach(([title,items,fmt])=>{ if(!items.length) return; has=true; const g=el("div",{"class":"result-group"}); g.appendChild(el("div",{"style":"font-weight:700;margin-bottom:8px"},`${title} (${items.length})`)); items.slice(0,6).forEach(it=>g.appendChild(el("div",{"class":"result-item"},fmt(it)))); wrap.appendChild(g); });
-  if(!has) wrap.appendChild(el("div",{"class":"small"},"Nessun risultato."));
+  const wrap = $("#global-search-results");
+  wrap.innerHTML = "";
+  if (!results) return;
+
+  const entries = [
+    [
+      "Prodotti",
+      results.products,
+      x => `${x.name} · ${x.sku || ""} · PREZZO ACQUISTO I.E: ${formatMoney(x.purchasePriceNet)} · PREZZO ACQUISTO I.I: ${formatMoney(x.purchasePriceGross)} · PREZZO VENDITA I.E: ${formatMoney(x.salePriceNet)} · PREZZO VENDITA I.I: ${formatMoney(x.salePriceGross)}`
+    ],
+    ["Fornitori", results.suppliers, x => `${x.name} · ${x.vat || ""}`],
+    ["Clienti", results.clients, x => `${x.name} · ${x.vat || ""}`],
+    ["Magazzini", results.warehouses, x => `${x.name} · ${x.city || ""}`],
+    ["Giacenze", results.stocks, x => `${productName(x.productId)} · ${warehouseName(x.warehouseId)} · qty ${x.qty}`],
+    ["Movimenti", results.movements, x => `${x.type} · ${x.date} · ${x.invoiceNo || x.ddtNo || x.orderNo || ""}`],
+    ["Alias", results.aliases, x => `${x.aliasType} · ${x.supplierCode || ""} · ${x.supplierDescription || ""}`],
+    ["Documenti", results.documents, x => `${x.documentDirection} · ${x.documentNo || ""} · ${x.originalFileName || ""}`]
+  ];
+
+  let has = false;
+
+  entries.forEach(([title, items, fmt]) => {
+    if (!items.length) return;
+    has = true;
+
+    const g = el("div", { "class": "result-group" });
+    g.appendChild(
+      el("div", { "style": "font-weight:700;margin-bottom:8px" }, `${title} (${items.length})`)
+    );
+
+    items.slice(0, 6).forEach(it => {
+      g.appendChild(el("div", { "class": "result-item" }, fmt(it)));
+    });
+
+    wrap.appendChild(g);
+  });
+
+  if (!has) {
+    wrap.appendChild(el("div", { "class": "small" }, "Nessun risultato."));
+  }
 }
 function showView(name){
   if(!canView(name)) return;
