@@ -39,6 +39,11 @@ function fillProductForm(product) {
   form.querySelector('[name="color"]').value = product.color || "";
   form.querySelector('[name="size"]').value = product.size || "";
   form.querySelector('[name="notes"]').value = product.notes || "";
+  form.querySelector('[name="purchasePriceNet"]').value = product.purchasePriceNet ?? "";
+  form.querySelector('[name="purchasePriceGross"]').value = product.purchasePriceGross ?? "";
+  form.querySelector('[name="salePriceNet"]').value = product.salePriceNet ?? "";
+  form.querySelector('[name="salePriceGross"]').value = product.salePriceGross ?? "";
+  form.querySelector('[name="vatRate"]').value = product.vatRate ?? "";
   $("#product-form-title").textContent = "Modifica articolo principale";
   $("#product-save-btn").textContent = "Salva modifica";
   $("#product-cancel-edit").classList.remove("hidden");
@@ -384,14 +389,20 @@ const productForm = $("#form-product");
 productForm.onsubmit = async e => {
   e.preventDefault();
 
-  const payload = {
-    name: productForm.querySelector('[name="name"]').value,
-    sku: productForm.querySelector('[name="sku"]').value,
-    category: productForm.querySelector('[name="category"]').value,
-    color: productForm.querySelector('[name="color"]').value,
-    size: productForm.querySelector('[name="size"]').value,
-    notes: productForm.querySelector('[name="notes"]').value
-  };
+const payload = {
+  name: productForm.querySelector('[name="name"]').value,
+  sku: productForm.querySelector('[name="sku"]').value,
+  category: productForm.querySelector('[name="category"]').value,
+  color: productForm.querySelector('[name="color"]').value,
+  size: productForm.querySelector('[name="size"]').value,
+  notes: productForm.querySelector('[name="notes"]').value,
+
+  purchasePriceNet: productForm.querySelector('[name="purchasePriceNet"]').value,
+  purchasePriceGross: productForm.querySelector('[name="purchasePriceGross"]').value,
+  salePriceNet: productForm.querySelector('[name="salePriceNet"]').value,
+  salePriceGross: productForm.querySelector('[name="salePriceGross"]').value,
+  vatRate: productForm.querySelector('[name="vatRate"]').value
+};
 
   const productId = productForm.querySelector('[name="id"]').value;
 
