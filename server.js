@@ -357,7 +357,8 @@ async function buildDbLike() {
     stocks,
     movements,
     aliases: legacy.aliases || [],
-    imports: legacy.imports || []
+    imports: legacy.imports || [],
+    roles: legacy.roles || []
   };
 }
 
