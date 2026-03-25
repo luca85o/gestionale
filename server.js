@@ -905,8 +905,13 @@ app.put("/api/products/:id", async (req, res) => {
         category = $3,
         color = $4,
         size = $5,
-        notes = $6
-      where id = $7
+        notes = $6,
+        purchase_price_net = $7,
+        purchase_price_gross = $8,
+        sale_price_net = $9,
+        sale_price_gross = $10,
+        vat_rate = $11
+      where id = $12
       returning
         id,
         name,
@@ -929,6 +934,11 @@ app.put("/api/products/:id", async (req, res) => {
       String(b.color || ""),
       String(b.size || ""),
       String(b.notes || ""),
+      b.purchasePriceNet === "" || b.purchasePriceNet == null ? null : Number(b.purchasePriceNet),
+      b.purchasePriceGross === "" || b.purchasePriceGross == null ? null : Number(b.purchasePriceGross),
+      b.salePriceNet === "" || b.salePriceNet == null ? null : Number(b.salePriceNet),
+      b.salePriceGross === "" || b.salePriceGross == null ? null : Number(b.salePriceGross),
+      b.vatRate === "" || b.vatRate == null ? null : Number(b.vatRate),
       id
     ]);
 
