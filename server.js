@@ -38,6 +38,51 @@ function nextId(items) {
 function textIncludes(v, q) {
   return String(v || "").toLowerCase().includes(q);
 }
+function normalizeProductPrices(input = {}) {
+  const toNum = v => (v === "" || v == null ? null : Number(v));
+  const round2 = n => (n == null || Number.isNaN(n) ? null : Math.round(n * 100) / 100);
+
+  let purchasePriceNet = toNum(input.purchasePriceNet);
+  let purchasePriceGross = toNum(input.purchasePriceGross);
+  let salePriceNet = toNum(input.salePriceNet);
+  let salePriceGross = toNum(input.salePriceGross);
+
+  let vatRate = toNum(input.vatRate);
+
+  const hasAnyPrice =
+    purchasePriceNet != null ||
+    purchasePriceGross != null ||
+    salePriceNet != null ||
+    salePriceGross != null;
+
+  if (hasAnyPrice && vatRate == null) {
+    vatRate = 22;
+  }
+
+  const vatMultiplier = vatRate != null ? 1 + vatRate / 100 : null;
+
+  if (vatMultiplier) {
+    if (purchasePriceNet != null && purchasePriceGross == null) {
+      purchasePriceGross = round2(purchasePriceNet * vatMultiplier);
+    } else if (purchasePriceGross != null && purchasePriceNet == null) {
+      purchasePriceNet = round2(purchasePriceGross / vatMultiplier);
+    }
+
+    if (salePriceNet != null && salePriceGross == null) {
+      salePriceGross = round2(salePriceNet * vatMultiplier);
+    } else if (salePriceGross != null && salePriceNet == null) {
+      salePriceNet = round2(salePriceGross / vatMultiplier);
+    }
+  }
+
+  return {
+    purchasePriceNet: round2(purchasePriceNet),
+    purchasePriceGross: round2(purchasePriceGross),
+    salePriceNet: round2(salePriceNet),
+    salePriceGross: round2(salePriceGross),
+    vatRate: round2(vatRate)
+  };
+}
 
 function normalizeText(s) {
   return String(s || "")
@@ -846,6 +891,8 @@ app.get("/api/products", async (req, res) => {
 app.post("/api/products", async (req, res) => {
   try {
     const b = req.body || {};
+    const prices = normalizeProductPrices(b);
+
     const result = await pool.query(`
       insert into products(
         name, sku, category, color, size, ean, notes,
@@ -877,11 +924,11 @@ app.post("/api/products", async (req, res) => {
       String(b.size || ""),
       String(b.ean || ""),
       String(b.notes || ""),
-      b.purchasePriceNet === "" || b.purchasePriceNet == null ? null : Number(b.purchasePriceNet),
-      b.purchasePriceGross === "" || b.purchasePriceGross == null ? null : Number(b.purchasePriceGross),
-      b.salePriceNet === "" || b.salePriceNet == null ? null : Number(b.salePriceNet),
-      b.salePriceGross === "" || b.salePriceGross == null ? null : Number(b.salePriceGross),
-      b.vatRate === "" || b.vatRate == null ? null : Number(b.vatRate),
+      prices.purchasePriceNet,
+      prices.purchasePriceGross,
+      prices.salePriceNet,
+      prices.salePriceGross,
+      prices.vatRate,
       b.supplierPackQty === "" || b.supplierPackQty == null ? null : Number(b.supplierPackQty)
     ]);
 
@@ -896,6 +943,7 @@ app.put("/api/products/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
     const b = req.body || {};
+    const prices = normalizeProductPrices(b);
 
     const result = await pool.query(`
       update products
@@ -910,8 +958,9 @@ app.put("/api/products/:id", async (req, res) => {
         purchase_price_gross = $8,
         sale_price_net = $9,
         sale_price_gross = $10,
-        vat_rate = $11
-      where id = $12
+        vat_rate = $11,
+        supplier_pack_qty = $12
+      where id = $13
       returning
         id,
         name,
@@ -934,11 +983,12 @@ app.put("/api/products/:id", async (req, res) => {
       String(b.color || ""),
       String(b.size || ""),
       String(b.notes || ""),
-      b.purchasePriceNet === "" || b.purchasePriceNet == null ? null : Number(b.purchasePriceNet),
-      b.purchasePriceGross === "" || b.purchasePriceGross == null ? null : Number(b.purchasePriceGross),
-      b.salePriceNet === "" || b.salePriceNet == null ? null : Number(b.salePriceNet),
-      b.salePriceGross === "" || b.salePriceGross == null ? null : Number(b.salePriceGross),
-      b.vatRate === "" || b.vatRate == null ? null : Number(b.vatRate),
+      prices.purchasePriceNet,
+      prices.purchasePriceGross,
+      prices.salePriceNet,
+      prices.salePriceGross,
+      prices.vatRate,
+      b.supplierPackQty === "" || b.supplierPackQty == null ? null : Number(b.supplierPackQty),
       id
     ]);
 
@@ -946,13 +996,16 @@ app.put("/api/products/:id", async (req, res) => {
       return res.status(404).json({ ok: false, message: "Prodotto non trovato" });
     }
 
-    res.json({ ok: true, product: result.rows[0], message: "Prodotto modificato con successo" });
+    res.json({
+      ok: true,
+      product: result.rows[0],
+      message: "Prodotto modificato con successo"
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, message: "Errore aggiornamento prodotto", error: err.message });
   }
 });
-
 app.delete("/api/products/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
